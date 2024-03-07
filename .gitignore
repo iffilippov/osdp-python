@@ -31,3 +31,10 @@ redis-server.log
 redis-server/
 __pycache__
 */__pycache__
+
+# Environments
+.env
+.venv
+.vscode
+env/
+venv/
