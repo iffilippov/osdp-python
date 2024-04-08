@@ -20,6 +20,7 @@ class ReplyType(Enum):
     CrypticData = 0x76
     InitialRMac = 0x78
     Busy = 0x79
+    FTSTAT = 0x7A
     ManufactureSpecific = 0x90
     XRD = 0xB1
 
