@@ -1,7 +1,13 @@
 from osdp import *
 import os
 
-conn = SerialPortOsdpConnection(port="COM9", baud_rate=9600)
+SERIAL_SPEED: int = 115200
+FIRST_CHUNK_SIZE: int = 44
+CHUNK_SIZE: int = 1421
+CMD_TYPE: list[int] = [0x01]
+FILE_NAME: str = "debug.mcu"
+
+conn = SerialPortOsdpConnection(port="COM9", baud_rate=SERIAL_SPEED)
 cp = ControlPanel()
 bus_id = cp.start_connection(conn)
 cp.add_device(
@@ -32,13 +38,26 @@ class FileTransferTestCommand(Command):
     def custom_command_update(self, command_buffer: bytearray):
         pass
 
+class AbortTestCommand(Command):
+    def __init__(self, address: int, manufacturer_data: bytes):
+        self.address = address
+        self.manufacturer_data = manufacturer_data
+
+    @property
+    def command_code(self) -> int:
+        return 0xA2
+
+    def security_control_block(self) -> bytes:
+        return bytes([0x02, 0x17])
+
+    def data(self) -> bytes:
+        return self.manufacturer_data
+
+    def custom_command_update(self, command_buffer: bytearray):
+        pass
+
 
 device = Device(address=0x02, use_crc=False, use_secure_channel=False)
-
-FIRST_CHUNK_SIZE: int = 44
-CHUNK_SIZE: int = 1421
-CMD_TYPE: list[int] = [0x01]
-FILE_NAME: str = "test.mcu"
 
 file_size = os.path.getsize(FILE_NAME)
 total_size: list[int] = list(file_size.to_bytes(4, "little"))
@@ -67,8 +86,11 @@ with open(FILE_NAME, "rb") as file:
     file_transfer_command.build_command(device)
     cp.send_custom_command(connection_id=bus_id, command=file_transfer_command)
 
+    # abort_command = AbortTestCommand(address=0x02, manufacturer_data=[])
+    # abort_command.build_command(device)
+    # cp.send_custom_command(connection_id=bus_id, command=abort_command)
+
     while chunk_data:  # loop until the chunk is empty (the file is exhausted)
-        print("WHILE LOOP")
 
         chunk_data = bytearray(file.read(CHUNK_SIZE))  # read the next chunk
         print(f"Bytearray test data is {chunk_data}")
