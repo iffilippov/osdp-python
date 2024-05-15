@@ -1,13 +1,15 @@
 from osdp import *
 import os
+import time
 
+PORT: str = 'COM9'
 SERIAL_SPEED: int = 115200
 FIRST_CHUNK_SIZE: int = 44
 CHUNK_SIZE: int = 1421
 CMD_TYPE: list[int] = [0x01]
 FILE_NAME: str = "debug.mcu"
 
-conn = SerialPortOsdpConnection(port="COM9", baud_rate=SERIAL_SPEED)
+conn = SerialPortOsdpConnection(port=PORT, baud_rate=SERIAL_SPEED)
 cp = ControlPanel()
 bus_id = cp.start_connection(conn)
 cp.add_device(
@@ -66,6 +68,7 @@ offset: int = 0
 offset_bytes: list[int] = list(offset.to_bytes(4, "little"))
 
 initial_fragment_size: list[int] = list(FIRST_CHUNK_SIZE.to_bytes(2, "little"))
+zero_fragment_size: list[int] = [0, 0]
 fragment_size: list[int] = list(CHUNK_SIZE.to_bytes(2, "little"))
 
 with open(FILE_NAME, "rb") as file:
@@ -106,6 +109,7 @@ with open(FILE_NAME, "rb") as file:
             print(f"LAST CURRENT OFFSET IS {offset}")
             offset_bytes = list(offset.to_bytes(4, "little"))
             print(f"LAST CURRENT OFFSET BYTES ARE {offset_bytes}")
+            break
         elif len(chunk_data_list) != CHUNK_SIZE:
             print(f"CURRENT OFFSET IS {offset}")
             offset_bytes = list(offset.to_bytes(4, "little"))
@@ -118,6 +122,19 @@ with open(FILE_NAME, "rb") as file:
             offset_bytes = list(offset.to_bytes(4, "little"))
             print(f"CURRENT OFFSET BYTES ARE {offset_bytes}")
             offset += CHUNK_SIZE
+            # Timeout test
+            if offset == 2886:
+                break
+
+        # Idling osdp_FILETRANSFER TEST
+        test_ft_cmd = bytes(
+            CMD_TYPE + total_size + offset_bytes + zero_fragment_size + chunk_data_list
+        )
+        file_transfer_command = FileTransferTestCommand(
+            address=0x02, manufacturer_data=test_ft_cmd
+        )
+        file_transfer_command.build_command(device)
+        cp.send_custom_command(connection_id=bus_id, command=file_transfer_command)
 
         test_ft_cmd = bytes(
             CMD_TYPE + total_size + offset_bytes + fragment_size + chunk_data_list
@@ -127,5 +144,17 @@ with open(FILE_NAME, "rb") as file:
         )
         file_transfer_command.build_command(device)
         cp.send_custom_command(connection_id=bus_id, command=file_transfer_command)
+
+    time.sleep(5)
+    # Idling osdp_FILETRANSFER TEST
+    test_ft_cmd = bytes(
+        CMD_TYPE + total_size + offset_bytes + zero_fragment_size + chunk_data_list
+    )
+    file_transfer_command = FileTransferTestCommand(
+        address=0x02, manufacturer_data=test_ft_cmd
+    )
+    file_transfer_command.build_command(device)
+    cp.send_custom_command(connection_id=bus_id, command=file_transfer_command)
+
 file.close()
 cp.shutdown()
