@@ -1,7 +1,10 @@
 from osdp import *
 import time
 
-conn = SerialPortOsdpConnection(port="COM8", baud_rate=9600)
+PORT: str = 'COM9'
+SERIAL_SPEED: int = 115200
+
+conn = SerialPortOsdpConnection(port=PORT, baud_rate=SERIAL_SPEED)
 cp = ControlPanel()
 bus_id = cp.start_connection(conn)
 cp.add_device(
@@ -39,15 +42,6 @@ read_mode_command = XWRTestCommand(
 read_mode_command.build_command(device)
 cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
 
-set_ext_mode_buffer = bytes([0x00, 0x02, 0x00, 0x01])
-set_ext_mode_command = XWRTestCommand(
-            address=0x02, manufacturer_data=set_ext_mode_buffer
-        )
-set_ext_mode_command.build_command(device)
-cp.send_custom_command(connection_id=bus_id, command=set_ext_mode_command)
-
-cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
-
 set_transparent_mode_buffer = bytes([0x00, 0x02, 0x01, 0x00])
 set_transparent_mode_command = XWRTestCommand(
             address=0x02, manufacturer_data=set_transparent_mode_buffer
@@ -55,27 +49,27 @@ set_transparent_mode_command = XWRTestCommand(
 set_transparent_mode_command.build_command(device)
 cp.send_custom_command(connection_id=bus_id, command=set_transparent_mode_command)
 
-cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
+# time.sleep(3)
 
-set_all_mode_buffer = bytes([0x00, 0x02, 0x01, 0x01])
-set_all_mode_command = XWRTestCommand(
-            address=0x02, manufacturer_data=set_all_mode_buffer
-        )
-set_all_mode_command.build_command(device)
-cp.send_custom_command(connection_id=bus_id, command=set_all_mode_command)
-
-cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
-
-time.sleep(3)
-
-set_default_mode_buffer = bytes([0x00, 0x02, 0x00, 0x00])
-set_def_mode_command = XWRTestCommand(
-            address=0x02, manufacturer_data=set_default_mode_buffer
-        )
-set_def_mode_command.build_command(device)
-cp.send_custom_command(connection_id=bus_id, command=set_def_mode_command)
+# set_ext_mode_buffer = bytes([0x00, 0x02, 0x00, 0x01])
+# set_ext_mode_command = XWRTestCommand(
+#             address=0x02, manufacturer_data=set_ext_mode_buffer
+#         )
+# set_ext_mode_command.build_command(device)
+# cp.send_custom_command(connection_id=bus_id, command=set_ext_mode_command)
 
 cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
+
+# time.sleep(3)
+
+# set_default_mode_buffer = bytes([0x00, 0x02, 0x00, 0x00])
+# set_def_mode_command = XWRTestCommand(
+#             address=0x02, manufacturer_data=set_default_mode_buffer
+#         )
+# set_def_mode_command.build_command(device)
+# cp.send_custom_command(connection_id=bus_id, command=set_def_mode_command)
+
+# cp.send_custom_command(connection_id=bus_id, command=read_mode_command)
 
 smart_card_scan_buffer = bytes([0x01, 0x04, 0x00])
 smart_card_scan_command = XWRTestCommand(
@@ -84,20 +78,20 @@ smart_card_scan_command = XWRTestCommand(
 smart_card_scan_command.build_command(device)
 cp.send_custom_command(connection_id=bus_id, command=smart_card_scan_command)
 
-cmd_list: list[hex] = [0x01, 0x01, 0x00]
-apdu_list: list[hex] = [0x80, 0xCA, 0x9F, 0x7F, 0x2D]
-select_ppse_test: list[hex] = [0x00,
+cmd_list: list[int] = [0x01, 0x01, 0x00]
+# apdu_list: list[int] = [0x80, 0xCA, 0x9F, 0x7F, 0x2D]
+select_ppse_test: list[int] = [0x00,
             0xa4,
             0x04,
             0x00,
             0x0e,
             0x32, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31,
             0x00]
-select_application: list[hex] = [0x00,
-            0xa4,
-            0x04,
-            0x00]
-test_list: list[hex] = [0x60, 0x00, 0x00, 0x00]
+# select_application: list[int] = [0x00,
+#             0xa4,
+#             0x04,
+#             0x00]
+# test_list: list[int] = [0x60, 0x00, 0x00, 0x00]
 transparent_request_buffer = bytes(cmd_list + select_ppse_test)
 # transparent_request_buffer = bytes([0x01, 0x01, 0x00, 0x00, 0xB2, 0x01, 0x14, 0x00,])
 transparent_request_command = XWRTestCommand(
@@ -105,3 +99,5 @@ transparent_request_command = XWRTestCommand(
         )
 transparent_request_command.build_command(device)
 cp.send_custom_command(connection_id=bus_id, command=transparent_request_command)
+
+cp.shutdown()
